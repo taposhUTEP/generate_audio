@@ -1,5 +1,8 @@
 import os
 import shutil
+import re
+import soundfile as sf
+import numpy as np
 import tempfile
 import traceback
 from contextlib import asynccontextmanager
@@ -39,33 +42,72 @@ def health():
     """Check if the service and ONNX sessions are ready."""
     return {"status": "ok", "model_loaded": synth is not None}
 
+
+def split_text_into_sentences(text: str):
+    # Splits on punctuation while keeping reasonable chunk sizes
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+    return [s.strip() for s in sentences if s.strip()]
+
+
 @app.post("/generate", tags=["Text-to-Speech"])
 def generate_speech(
     background_tasks: BackgroundTasks,
     text: str = Form(...),
     exaggeration: float = Form(0.5)
 ):
-    """Standard TTS using the built-in default clean voice."""
     if not text.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty")
 
-    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_wav:
-        out_path = tmp_wav.name
+    chunks = split_text_into_sentences(text)
+    temp_wav_paths = []
 
     try:
-        synth.synthesize(
-            text=text,
-            target_voice_path=None,
-            exaggeration=exaggeration,
-            output_file_name=out_path,
-            apply_watermark=False
-        )
-        # Schedule the output file to be deleted AFTER the user downloads it
-        background_tasks.add_task(remove_file, out_path)
-        return FileResponse(out_path, media_type="audio/wav", filename="speech.wav")
+        # 1. Synthesize each sentence into an isolated chunk (Memory stays flat)
+        for i, chunk in enumerate(chunks):
+            with tempfile.NamedTemporaryFile(suffix=f"_{i}.wav", delete=False) as tmp_chunk:
+                chunk_path = tmp_chunk.name
+                temp_wav_paths.append(chunk_path)
+
+            synth.synthesize(
+                text=chunk,
+                target_voice_path=None,
+                exaggeration=exaggeration,
+                output_file_name=chunk_path,
+                apply_watermark=False
+            )
+
+        # 2. Stitch the audio waveforms together into one master file
+        combined_audio = []
+        sample_rate = None
+
+        for path in temp_wav_paths:
+            data, sr = sf.read(path)
+            sample_rate = sr
+            combined_audio.append(data)
+            # Add a brief 0.25s silence between sentences for natural pacing
+            silence = np.zeros(int(sr * 0.25), dtype=data.dtype)
+            combined_audio.append(silence)
+
+        final_waveform = np.concatenate(combined_audio)
+
+        # 3. Write final combined WAV
+        with tempfile.NamedTemporaryFile(suffix="_full.wav", delete=False) as final_tmp:
+            final_path = final_tmp.name
+
+        sf.write(final_path, final_waveform, sample_rate)
+
+        # Schedule cleanup
+        for path in temp_wav_paths:
+            background_tasks.add_task(remove_file, path)
+        background_tasks.add_task(remove_file, final_path)
+
+        return FileResponse(final_path, media_type="audio/wav", filename="speech.wav")
+
     except Exception as e:
-        remove_file(out_path)
+        for path in temp_wav_paths:
+            remove_file(path)
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/clone-voice", tags=["Text-to-Speech"])
 async def clone_voice(
