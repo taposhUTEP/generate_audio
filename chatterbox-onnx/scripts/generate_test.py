@@ -4,23 +4,23 @@ import requests
 API_URL = "http://localhost:8000/generate"
 
 sentences = [
-    "Hello! This is the first audio generated with the ONNX pipeline.",
-    "And here is the second sentence, generated and saved into a completely separate file."
+    "What is your overall teaching philosophy, and how does it translate into daily classroom practice?",
+    "How do you measure your own effectiveness as an instructor beyond end-of-semester student evaluations?"
 ]
 
 def generate_speech_file(text: str, filename: str, exaggeration: float = 0.5):
     print(f"Synthesizing: \"{text}\"")
     start_time = time.time()
     
-    # We pass 'text' and 'exaggeration' as URL query parameters to match the FastAPI route
-    params = {
+    # We pass 'text' and 'exaggeration' as form data to match the updated FastAPI route
+    form_data = {
         "text": text,
         "exaggeration": exaggeration
     }
     
     try:
-        # Give it up to 180s per generation to account for CPU inference time
-        response = requests.post(API_URL, params=params, timeout=180)
+        # Pass the dictionary to the 'data' argument instead of 'params'
+        response = requests.post(API_URL, data=form_data, timeout=180)
         
         if response.status_code == 200:
             with open(filename, "wb") as f:

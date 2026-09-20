@@ -1,16 +1,16 @@
 FROM python:3.11-slim
 
-# Install system dependencies required for audio file generation
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install ONNX runtime, Chatterbox ONNX port, and web server
+# Added python-multipart for file upload support
 RUN pip install --no-cache-dir \
     chatterbox-onnx \
     onnxruntime \
     fastapi \
-    uvicorn
+    uvicorn \
+    python-multipart
 
 WORKDIR /app
 COPY app.py .
