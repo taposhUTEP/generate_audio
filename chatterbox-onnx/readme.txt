@@ -18,4 +18,4 @@ so we get warning about HF_TOKEN, ignore it.
 Takes almost half a minute to load the model and run, so wait till you see: INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 
 3. Test
-$ curl -X POST "http://localhost:8000/generate?text=Hello%20world,%20this%20is%20Chatterbox%20running%20on%20my%20CPU." --output output.wav
+$ curl -X POST "http://localhost:8000/generate" -F "text=Hello world, this is Chatterbox running on my CPU." --output output.wav
