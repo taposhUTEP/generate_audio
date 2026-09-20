@@ -12,7 +12,9 @@ scripts = {
 }
 
 # Voice selection (Neural voices are much higher quality)
-VOICE = "en-US-ChristopherNeural" 
+# Check voice list with command: edge-tts --list-voices
+#VOICE = "en-US-ChristopherNeural"
+VOICE = "en-US-AndrewNeural" 
 
 async def generate_audio():
     print(f"Starting generation using voice: {VOICE}...")
