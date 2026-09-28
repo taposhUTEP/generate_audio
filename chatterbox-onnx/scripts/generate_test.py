@@ -1,5 +1,14 @@
 import time
 import requests
+import sys
+from pathlib import Path
+
+# Navigate up to the folder
+texts_dir = str(Path(__file__).resolve().parent.parent.parent / "texts")
+sys.path.append(texts_dir)
+#print(texts_dir)
+#exit()
+import ip_academic as texts
 
 API_URL = "http://localhost:8000/generate"
 
@@ -34,7 +43,10 @@ def generate_speech_file(text: str, filename: str, exaggeration: float = 0.5):
         print(f"Network error: {e}\n")
 
 if __name__ == "__main__":
-    for index, text in enumerate(sentences, start=1):
-        output_filename = f"audio_{index}.wav"
+    # for index, text in enumerate(sentences, start=1):
+    #     output_filename = f"audio_{index}.wav"
+    #     generate_speech_file(text, output_filename)
+    for title, text in texts.questions.items():
+        output_filename = f"{title}.mp3"
         generate_speech_file(text, output_filename)
 

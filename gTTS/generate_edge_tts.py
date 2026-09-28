@@ -24,7 +24,8 @@ scripts = {
 # Check voice list with command: edge-tts --list-voices
 #VOICE = "en-US-ChristopherNeural"
 #VOICE = "en-US-AndrewNeural" 
-VOICE = "en-IE-EmilyNeural"
+#VOICE = "en-IE-EmilyNeural"
+VOICE = "en-US-JennyNeural"
 
 async def generate_audio():
     print(f"Starting generation using voice: {VOICE}...")
@@ -36,6 +37,7 @@ async def generate_audio():
         communicate = edge_tts.Communicate(text, VOICE)
         await communicate.save(filename)
         print(f"Generated: {filename}")
+        #break
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop_policy().get_event_loop()
